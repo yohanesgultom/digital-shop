@@ -7,7 +7,7 @@ const google = require('./google');
 
 const PREVIEW_FOLDER_ID = process.env.PREVIEW_FOLDER_ID || '1hIybghWyA9FixTG7bAqvt1ieyzQlkk6j';
 const ORIGINAL_FOLDER_ID = process.env.ORIGINAL_FOLDER_ID || '1dk0wYkao0dLAujr7vP_scsKi9iC5ZyWG';
-const DOWNLOAD_INTERVAL_SECONDS = parseInt(process.env.DOWNLOAD_INTERVAL_SECONDS) || 60;
+const DOWNLOAD_INTERVAL_SECONDS = parseInt(process.env.DOWNLOAD_INTERVAL_SECONDS) || 5;
 const ORDER_SPREADSHEET_ID = process.env.ORDER_SPREADSHEET_ID || '1SygsYdY-LXsqSySN5gZwJAUnKndnoHGw0mQIGCW2Nh0';
 const SEND_ORIGINAL_INTERVAL_SECONDS = parseInt(process.env.SEND_ORIGINAL_INTERVAL_SECONDS) || 5;
 const SMTP_USER = process.env.SMTP_USER || 'shop@proentry.id';

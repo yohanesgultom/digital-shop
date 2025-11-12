@@ -1,6 +1,9 @@
 node_modules/
 public/products/*
+!public/products/.gitkeep
 public/receipts/*
+!public/receipts/.gitkeep
 temp/*
+!temp/.gitkeep
 
 service-account.json

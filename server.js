@@ -44,6 +44,7 @@ fastify.get('/api/products', (_, reply) => {
     }
 
     reply.send(files
+      .filter(file => ['.jpg', '.png'].includes(path.extname(file).toLocaleLowerCase()))
       .map(file => {
         return {
             id: file,
