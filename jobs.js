@@ -14,11 +14,11 @@ const SMTP_USER = process.env.SMTP_USER || 'shop@proentry.id';
 
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.zoho.com',
-    port: parseInt(process.env.SMTP_PORT) || 465,
-    secure: process.env.SMTP_PORT && process.env.SMTP_PORT !== '25',
+    port: parseInt(process.env.SMTP_PORT) || 587,
+    secure: process.env.SMTP_SECURE === 'true',
     auth: {
         user: SMTP_USER,
-        pass: process.env.SMTP_PASSWORD || '',
+        pass: process.env.SMTP_PASSWORD,
     },
 });
 
