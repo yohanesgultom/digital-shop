@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Digital Shop — Demo SPA</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1>Digital Shop</h1>
+      <div class="header-actions">
+        <button id="cart-toggle" class="cart-btn">Cart (<span id="cart-count">0</span>)</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="products" class="products-grid" aria-live="polite">
+      <!-- Products rendered here -->
+    </section>
+  </main>
+
+  <!-- Cart Drawer -->
+  <aside id="cart-drawer" class="cart-drawer" aria-hidden="true">
+    <div class="cart-header">
+      <h2>Your Cart</h2>
+      <button id="close-cart" class="close-btn">×</button>
+    </div>
+    <div id="cart-items" class="cart-items">
+      <!-- Cart items -->
+    </div>
+    <div class="cart-footer">
+      <div class="cart-summary">
+        <span>Total:</span>
+        <strong id="cart-total">Rp 0</strong>
+      </div>
+      <div class="cart-actions">
+        <button id="clear-cart" class="secondary">Clear</button>
+        <button id="checkout" class="primary">Checkout</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Order Modal -->
+  <div id="order-modal" class="modal" aria-hidden="true">
+    <div class="modal-content">
+      <h3>Submit Order</h3>
+      <div class="alert">
+        Please make a bank transfer to:
+        <p>
+          <strong>Blu (by BCA Digital)</strong><br />
+          <strong>002215051977</strong><br />
+          <strong>a.n. Hasudungan Ridwan P Sirait</strong>
+        </p>
+        After the transfer, upload your receipt below along with your email.
+      </div>
+      <form id="order-form">
+        <label>
+          Email
+          <input type="email" name="email" required />
+        </label>
+        <label>
+          Transfer Receipt (.jpg, .png, .pdf)
+          <input type="file" name="receipt" accept=".jpg,.png,.pdf" required />
+        </label>
+        <div class="form-actions">
+          <button type="button" id="cancel-order" class="secondary">Cancel</button>
+          <button type="submit" class="primary">Submit Order</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Image Preview Modal -->
+  <div id="image-modal" class="modal image-modal" aria-hidden="true">
+    <div class="modal-content image-modal-content">
+      <button id="close-image" class="close-btn">×</button>
+      <img id="image-modal-img" src="" alt="" />
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
+
