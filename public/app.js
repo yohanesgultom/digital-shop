@@ -199,13 +199,14 @@ const products = [];
 
   function handleOrderSubmit(e){
     e.preventDefault();
+    showOverlay();
     if(cart.length===0){ showToast('Cart is empty'); return; }
     const orderFormData = new FormData(orderForm);
     const form = new FormData();
     form.append('email', orderFormData.get('email'));
     form.append('items', cart.map(item => item.id.replace('_preview', '')).join(','));
     form.append('receipt', orderFormData.get('receipt'));
-
+    
     fetch('/api/order', {
       method: 'POST',
       body: form,
@@ -226,6 +227,9 @@ const products = [];
       updateCartUI();
       openOrder(false);
       orderForm.reset();
+    })
+    .finally(() => {
+      hideOverlay();
     });
   }
 
@@ -235,6 +239,30 @@ const products = [];
   function showToast(msg,ms=2000){
     toastEl.textContent = msg; toastEl.classList.add('show');
     setTimeout(()=>toastEl.classList.remove('show'), ms);
+  }
+
+  /**
+   * Shows the full-page loading overlay.
+   */
+  function showOverlay() {
+      const overlay = document.getElementById('overlay');
+      if (overlay) {
+          // Remove the 'hidden' class to make it visible
+          overlay.classList.remove('hidden');
+          console.log('Overlay shown.');
+      }
+  }
+
+  /**
+   * Hides the full-page loading overlay.
+   */
+  function hideOverlay() {
+      const overlay = document.getElementById('overlay');
+      if (overlay) {
+          // Add the 'hidden' class to conceal it
+          overlay.classList.add('hidden');
+          console.log('Overlay hidden.');
+      }
   }
 
   // utility: simple html escape

@@ -72,6 +72,7 @@ fastify.post('/api/order', async (request, reply) => {
     const prefix = new Date().toISOString().replaceAll(/[^\d]/g, '');
     const filename = prefix + '_' + data.filename;
     const uploadPath = path.join(RECEIPT_DIR, filename);
+    request.log.info(`saving receipt to ${uploadPath}..`)
     await pipeline(data.file, fs.createWriteStream(uploadPath));
     // update sheet
     const receipt = `${BASE_URL}/${RECEIPT_PATH}/${filename}`;
@@ -84,7 +85,9 @@ fastify.post('/api/order', async (request, reply) => {
       receipt,
       status,
     ]];
+    request.log.info({values}, `saving order to ${ORDER_SPREADSHEET_ID}..`)
     const res = await google.appendRows(ORDER_SPREADSHEET_ID, 'orders!A2', values);
+    request.log.debug({res}, `order submitted`);
     return {
       success: true,
       response: res
