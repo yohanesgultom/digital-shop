@@ -15,17 +15,26 @@ const drive = google.drive({ version: 'v3', auth });
 const sheets = google.sheets({ version: "v4", auth });
 
 // Now you can use the 'drive' object to interact with the Google Drive API
-async function listFiles(folderId) {
+async function listFiles(folderId, pageSize=10) {
+    const files = [];
+    let pageToken;
     try {
-        const res = await drive.files.list({
-            pageSize: 10,
-            q: `'${folderId}' in parents and trashed=false`,
-            fields: 'nextPageToken, files(id, name)',
-        });
-        const files = res.data.files;
-        if (files.length) {
-            return files.map(file => ({ id: file.id, name: file.name }));
-        }
+        do {
+            const res = await drive.files.list({
+                pageSize,
+                pageToken,
+                q: `'${folderId}' in parents and trashed=false`,
+                fields: 'nextPageToken, files(id, name)',
+            });
+            if (res.data.files) {
+                res.data.files.forEach(file => {
+                    files.push({ id: file.id, name: file.name })
+                });
+            }
+            pageToken = res.data.nextPageToken;
+        } while (pageToken);
+        console.log(`listFiles: ${files.length}`);
+        return files;
     } catch (err) {
         console.error('The API returned an error: ' + err);
     }
@@ -79,7 +88,7 @@ async function updateCells(spreadsheetId, range, values, valueInputOption = 'USE
     return res;
 }
 
-// listFiles('1hIybghWyA9FixTG7bAqvt1ieyzQlkk6j').then(console.log);
+// listFiles('1hIybghWyA9FixTG7bAqvt1ieyzQlkk6j').then((files) => console.log(files.length));
 // downloadFile('1HA3JsJ7jtZT7lPe2Bock7_x-ejo-ZG7h', 'godzilla.jpg');
 
 module.exports = {

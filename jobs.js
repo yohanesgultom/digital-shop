@@ -54,7 +54,7 @@ const loadPreviewImagesJob = new SimpleIntervalJob({ seconds: DOWNLOAD_INTERVAL_
     'Load Preview Images Task',
     loadPreviewImages,
     console.error
-));
+), {preventOverrun: true});
 
 const sendOriginalPhotos = async () => {
     const [originalFiles, orders] = await Promise.all([
@@ -107,7 +107,7 @@ const sendOriginalPhotosJob = new SimpleIntervalJob({ seconds: SEND_ORIGINAL_INT
     'Send Original Photos Task',
     sendOriginalPhotos,
     console.error
-));
+), {preventOverrun: true});
 
 module.exports = {
     loadPreviewImagesJob,
