@@ -35,19 +35,23 @@ const getExistingPreviewImages = async (dir) => {
 
 const loadPreviewImages = async () => {
     const targetFolder = 'public/products';
-    const existingFiles = await getExistingPreviewImages(targetFolder);
-    console.log(`Loading preview images from ${PREVIEW_FOLDER_ID}...`)
-    const files = await google.listFiles(PREVIEW_FOLDER_ID)
-    const newFiles = files.filter(file => !existingFiles.includes(file.name));
-    console.log(`Found ${newFiles.length} new files.`)
-    await Promise.all(files.map(async (file) => {
-        if (!existingFiles.includes(file.name)) {
-            const filePath = path.join(targetFolder, file.name);
-            console.log(`Downloading to ${filePath}...`);
-            await google.downloadFile(file.id, filePath);
-        }
-    }));
-    return true;
+    try {
+        const existingFiles = await getExistingPreviewImages(targetFolder);
+        console.log(`Loading preview images from ${PREVIEW_FOLDER_ID}...`)
+        const files = await google.listFiles(PREVIEW_FOLDER_ID)
+        const newFiles = files.filter(file => !existingFiles.includes(file.name));
+        console.log(`Found ${newFiles.length} new files.`)
+        await Promise.all(files.map(async (file) => {
+            if (!existingFiles.includes(file.name)) {
+                const filePath = path.join(targetFolder, file.name);
+                console.log(`Downloading to ${filePath}...`);
+                await google.downloadFile(file.id, filePath);
+            }
+        }));
+        return true;
+    } catch (e) {
+        console.error('Unable to load preview images', e);
+    }
 }
 
 const loadPreviewImagesJob = new SimpleIntervalJob({ seconds: DOWNLOAD_INTERVAL_SECONDS, }, new AsyncTask(
@@ -57,47 +61,60 @@ const loadPreviewImagesJob = new SimpleIntervalJob({ seconds: DOWNLOAD_INTERVAL_
 ), {preventOverrun: true});
 
 const sendOriginalPhotos = async () => {
-    const [originalFiles, orders] = await Promise.all([
-        google.listFiles(ORIGINAL_FOLDER_ID),
-        google.readRows(ORDER_SPREADSHEET_ID, 'orders'),
-    ]);
-    const fileMap = {};
-    for (const ori of originalFiles) {
-        fileMap[ori.name] = ori.id;
+    // load files
+    let originalFiles, orders;
+    try {
+        [originalFiles, orders] = await Promise.all([
+            google.listFiles(ORIGINAL_FOLDER_ID),
+            google.readRows(ORDER_SPREADSHEET_ID, 'orders'),
+        ]);
+        const fileMap = {};
+        for (const ori of originalFiles) {
+            fileMap[ori.name] = ori.id;
+        }
+    } catch (e) {
+        console.error('Unable to load files mapping');
     }
+
+    // process orders
     for (let i = 1; i <= orders.length; i++) {
         if (orders[i]) {
-            const [orderTime, email, items, total, receipt, status, deliveryTime] = orders[i];
-            if (status === 'PAID' && !deliveryTime) {
-                console.log('Sending ' + items + ' to ' + email);
-                const attachments = [];
-                const fileNames = items.split(',');
-                const promises = [];
-                for (const fileName of fileNames) {
-                    const fileId = fileMap[fileName];
-                    console.log(`fileId of ${fileName} is ${fileId}`);
-                    const tempPath = path.join('temp', fileName);
-                    try {
-                        await fsPromises.access(tempPath, fsPromises.constants.F_OK);
-                    } catch (e) {
-                        promises.push(google.downloadFile(fileId, tempPath));
+            const rowId = i + 1;
+            try {
+                const [orderTime, email, items, total, receipt, status, deliveryTime] = orders[i];
+                if (status === 'PAID' && !deliveryTime) {
+                    console.log('Sending ' + items + ' to ' + email);
+                    const attachments = [];
+                    const fileNames = items.split(',');
+                    const promises = [];
+                    for (const fileName of fileNames) {
+                        const fileId = fileMap[fileName];
+                        console.log(`fileId of ${fileName} is ${fileId}`);
+                        const tempPath = path.join('temp', fileName);
+                        try {
+                            await fsPromises.access(tempPath, fsPromises.constants.F_OK);
+                        } catch (e) {
+                            promises.push(google.downloadFile(fileId, tempPath));
+                        }
+                        attachments.push({path: tempPath});
                     }
-                    attachments.push({path: tempPath});
+                    await Promise.all(promises);
+                    
+                    const timestamp = new Date().toLocaleString('en-US', {timeZone: 'Asia/Jakarta'});
+                    const info = await transporter.sendMail({
+                        from: SMTP_USER,
+                        to: email,
+                        subject: "[Digital Shop] Thank you for your purchase",
+                        text: "Please get your order(s) in attachment",
+                        html: "Please get your order(s) in attachment",
+                        attachments
+                    });
+                    await google.updateCells(ORDER_SPREADSHEET_ID, 'orders!F' + rowId, [['DELIVERED', timestamp]]);
+                    console.log('Original photos ' + items + ' have been sent to ' + email);
                 }
-                await Promise.all(promises);
-                
-                const rowId = i + 1;
-                const timestamp = new Date().toLocaleString('en-US', {timeZone: 'Asia/Jakarta'});
-                const info = await transporter.sendMail({
-                    from: SMTP_USER,
-                    to: email,
-                    subject: "[Digital Shop] Thank you for your purchase",
-                    text: "Please get your order(s) in attachment",
-                    html: "Please get your order(s) in attachment",
-                    attachments
-                });
-                await google.updateCells(ORDER_SPREADSHEET_ID, 'orders!F' + rowId, [['DELIVERED', timestamp]]);
-                console.log('Original photos ' + items + ' have been sent to ' + email);
+            } catch (e) {
+                console.error('Unable to process order', orders[i]);
+                await google.updateCells(ORDER_SPREADSHEET_ID, 'orders!F' + rowId, [['FAILED', timestamp]]);
             }
         }
     }
