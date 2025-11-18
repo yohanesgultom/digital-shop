@@ -80,8 +80,9 @@ const sendOriginalPhotos = async () => {
     for (let i = 1; i <= orders.length; i++) {
         if (orders[i]) {
             const rowId = i + 1;
+            const timestamp = new Date().toLocaleString('en-US', {timeZone: 'Asia/Jakarta'});
+            const [orderTime, email, items, total, receipt, status, deliveryTime] = orders[i];
             try {
-                const [orderTime, email, items, total, receipt, status, deliveryTime] = orders[i];
                 if (status === 'PAID' && !deliveryTime) {
                     console.log('Sending ' + items + ' to ' + email);
                     const attachments = [];
@@ -100,7 +101,6 @@ const sendOriginalPhotos = async () => {
                     }
                     await Promise.all(promises);
                     
-                    const timestamp = new Date().toLocaleString('en-US', {timeZone: 'Asia/Jakarta'});
                     const info = await transporter.sendMail({
                         from: SMTP_USER,
                         to: email,
@@ -113,7 +113,7 @@ const sendOriginalPhotos = async () => {
                     console.log('Original photos ' + items + ' have been sent to ' + email);
                 }
             } catch (e) {
-                console.error('Unable to process order', orders[i]);
+                console.error(`Unable to process order ${email}`, e);
                 await google.updateCells(ORDER_SPREADSHEET_ID, 'orders!F' + rowId, [['FAILED', timestamp]]);
             }
         }
