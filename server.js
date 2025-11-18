@@ -25,7 +25,7 @@ fastify.register(require('@fastify/multipart'));
 
 fastify.register(fastifySchedule);
 fastify.ready().then(() => {
-  fastify.scheduler.addSimpleIntervalJob(loadPreviewImagesJob);
+  // fastify.scheduler.addSimpleIntervalJob(loadPreviewImagesJob);
   fastify.scheduler.addSimpleIntervalJob(sendOriginalPhotosJob);
 });
 

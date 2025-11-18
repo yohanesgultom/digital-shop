@@ -63,14 +63,15 @@ const loadPreviewImagesJob = new SimpleIntervalJob({ seconds: DOWNLOAD_INTERVAL_
 const sendOriginalPhotos = async () => {
     // load files
     let originalFiles, orders;
+    const fileMap = {};
     try {
         [originalFiles, orders] = await Promise.all([
             google.listFiles(ORIGINAL_FOLDER_ID),
             google.readRows(ORDER_SPREADSHEET_ID, 'orders'),
         ]);
-        const fileMap = {};
         for (const ori of originalFiles) {
-            fileMap[ori.name] = ori.id;
+            const oriName = ori.name.toUpperCase();
+            fileMap[oriName] = ori.id;
         }
     } catch (e) {
         console.error('Unable to load files mapping');
@@ -86,9 +87,9 @@ const sendOriginalPhotos = async () => {
                 if (status === 'PAID' && !deliveryTime) {
                     console.log('Sending ' + items + ' to ' + email);
                     const attachments = [];
-                    const fileNames = items.split(',');
+                    const fileNames = items.toUpperCase().split(',');
                     const promises = [];
-                    for (const fileName of fileNames) {
+                    for (const fileName of fileNames) {                        
                         const fileId = fileMap[fileName];
                         console.log(`fileId of ${fileName} is ${fileId}`);
                         const tempPath = path.join('temp', fileName);
@@ -127,6 +128,8 @@ const sendOriginalPhotosJob = new SimpleIntervalJob({ seconds: SEND_ORIGINAL_INT
 ), {preventOverrun: true});
 
 module.exports = {
+    loadPreviewImages,
+    sendOriginalPhotos,
     loadPreviewImagesJob,
     sendOriginalPhotosJob,
 }
