@@ -2,30 +2,19 @@ const fs = require('fs');
 const fsPromises = require('fs/promises');
 const path = require('path');
 const { SimpleIntervalJob, AsyncTask } = require('toad-scheduler');
-const nodemailer = require("nodemailer");
 const google = require('./google');
+const mail = require('./mail');
 
 const PREVIEW_FOLDER_ID = process.env.PREVIEW_FOLDER_ID || '1hIybghWyA9FixTG7bAqvt1ieyzQlkk6j';
 const ORIGINAL_FOLDER_ID = process.env.ORIGINAL_FOLDER_ID || '1dk0wYkao0dLAujr7vP_scsKi9iC5ZyWG';
 const DOWNLOAD_INTERVAL_SECONDS = parseInt(process.env.DOWNLOAD_INTERVAL_SECONDS) || 5;
 const ORDER_SPREADSHEET_ID = process.env.ORDER_SPREADSHEET_ID || '1SygsYdY-LXsqSySN5gZwJAUnKndnoHGw0mQIGCW2Nh0';
 const SEND_ORIGINAL_INTERVAL_SECONDS = parseInt(process.env.SEND_ORIGINAL_INTERVAL_SECONDS) || 5;
-const SMTP_USER = process.env.SMTP_USER || 'shop@proentry.id';
 const ATTACHMENT_LIMIT = parseInt(process.env.ATTACHMENT_LIMIT) || 25000000;
 
 const EMAIL_SUBJECT = "[Digital Shop] Thank you for your purchase";
 const EMAIL_BODY_TEXT = "Please get your order(s) in attachment";
 const EMAIL_BODY_HTML = "Please get your order(s) in attachment";
-
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.zoho.com',
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: {
-        user: SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-    },
-});
 
 const getExistingPreviewImages = async (dir) => {
     return new Promise((resolve, reject) => {
@@ -164,14 +153,7 @@ const sendOriginalPhotos = async () => {
                     // send email(s)
                     for (const partialAttachments of attachmentGroups) {
                         console.log(`sending email to ${email}`, partialAttachments);
-                        await transporter.sendMail({
-                            from: SMTP_USER,
-                            to: email,
-                            subject: EMAIL_SUBJECT,
-                            text: EMAIL_BODY_TEXT,
-                            html: EMAIL_BODY_HTML,
-                            attachments: partialAttachments,
-                        });
+                        await mail.send(email, EMAIL_SUBJECT, EMAIL_BODY_TEXT, EMAIL_BODY_HTML, partialAttachments);
                     }
                     await google.updateCells(ORDER_SPREADSHEET_ID, 'orders!F' + rowId, [['DELIVERED', timestamp]]);
                     console.log('Original photos ' + items + ' have been sent to ' + email);

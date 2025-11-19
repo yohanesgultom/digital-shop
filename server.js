@@ -4,6 +4,7 @@ const { pipeline } = require('node:stream/promises')
 
 const { loadPreviewImagesJob, sendOriginalPhotosJob } = require('./jobs');
 const google = require('./google');
+const mail = require('./mail');
 
 const fastify = require('fastify')({ logger: true });
 const { fastifySchedule } = require('@fastify/schedule');
@@ -11,6 +12,9 @@ const { fastifySchedule } = require('@fastify/schedule');
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 const DEFAULT_PRICE = parseInt(process.env.DEFAULT_PRICE) || 20000;
 const ORDER_SPREADSHEET_ID = process.env.ORDER_SPREADSHEET_ID || '1SygsYdY-LXsqSySN5gZwJAUnKndnoHGw0mQIGCW2Nh0';
+const ADMIN_EMAILS = process.env.ADMIN_EMAILS;
+const ORDER_STATUS_URL = process.env.ORDER_STATUS_URL || 'https://docs.google.com/spreadsheets/d/1SygsYdY-LXsqSySN5gZwJAUnKndnoHGw0mQIGCW2Nh0/edit?gid=0#gid=0';
+
 const RECEIPT_PATH = 'receipts';
 const RECEIPT_DIR = path.join('public', RECEIPT_PATH);
 
@@ -68,12 +72,14 @@ fastify.post('/api/order', async (request, reply) => {
     reply.status(400);
     return { error: 'Invalid payload' };
   } else {
+    
     // upload receipt
     const prefix = new Date().toISOString().replaceAll(/[^\d]/g, '');
     const filename = prefix + '_' + data.filename;
     const uploadPath = path.join(RECEIPT_DIR, filename);
     request.log.info(`saving receipt to ${uploadPath}..`)
     await pipeline(data.file, fs.createWriteStream(uploadPath));
+    
     // update sheet
     const receipt = `${BASE_URL}/${RECEIPT_PATH}/${filename}`;
     const status = 'NEW';
@@ -88,6 +94,16 @@ fastify.post('/api/order', async (request, reply) => {
     request.log.info({values}, `saving order to ${ORDER_SPREADSHEET_ID}..`)
     const res = await google.appendRows(ORDER_SPREADSHEET_ID, 'orders!A2', values);
     request.log.debug({res}, `order submitted`);
+    
+    // send email notifications
+    if (ADMIN_EMAILS) {
+      const subject = 'New order received';
+      const body = values[0].join('<br>') + `<p>Please update order status: ${ORDER_STATUS_URL}</p>` ; 
+      // async
+      request.log.info({body}, `sending new order notification emails`)
+      mail.send(ADMIN_EMAILS, subject, body, body, []);
+    }
+    
     return {
       success: true,
       response: res
